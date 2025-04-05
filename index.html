@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>3D Breakout OOP</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+            rel="stylesheet">
+        <style>
+        body { margin: 0; overflow: hidden; background-color: #111; color: #fff; font-family: 'Press Start 2P', cursive; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        #gameCanvas { display: block; background-color: #222; width: 100%; height: 100%; } /* Fullscreen */
+        #ui { position: absolute; top: 10px; left: 0; right: 0; width: 90%; max-width: 800px; margin: 0 auto; z-index: 10; display: flex; justify-content: space-around; font-size: 16px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none; }
+        #messageBox { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.85); color: white; padding: 30px; border-radius: 15px; font-size: 24px; text-align: center; z-index: 100; display: none; border: 2px solid cyan; box-shadow: 0 0 15px cyan; max-width: 90%; width: 500px; }
+        #messageButtons { margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
+        button { font-family: 'Press Start 2P', cursive; padding: 10px 20px; font-size: 16px; cursor: pointer; background: linear-gradient(145deg, #00ffff, #00aaaa); color: #111; border: none; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 255, 255, 0.4); transition: all 0.2s ease; pointer-events: auto; }
+        button:hover { background: linear-gradient(145deg, #00dddd, #008888); box-shadow: 0 6px 12px rgba(0, 255, 255, 0.6); transform: translateY(-2px); }
+        button:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 255, 255, 0.3); }
+        #demoButton { background: linear-gradient(145deg, #ff8c00, #ff4500); box-shadow: 0 4px 8px rgba(255, 100, 0, 0.4); }
+        #demoButton:hover { background: linear-gradient(145deg, #ff7000, #ff2000); box-shadow: 0 6px 12px rgba(255, 100, 0, 0.6); }
+        #helpButton { font-size: 18px; padding: 8px 15px; background: linear-gradient(145deg, #90ee90, #3cb371); box-shadow: 0 4px 8px rgba(144, 238, 144, 0.4); }
+        #helpButton:hover { background: linear-gradient(145deg, #7adc7a, #2e8b57); box-shadow: 0 6px 12px rgba(144, 238, 144, 0.6); }
+        #practiceButton { background: linear-gradient(145deg, #87ceeb, #4682b4); box-shadow: 0 4px 8px rgba(135, 206, 235, 0.4); }
+        #practiceButton:hover { background: linear-gradient(145deg, #6fbeda, #367ab4); box-shadow: 0 6px 12px rgba(135, 206, 235, 0.6); }
+        #helpModal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 600px; max-height: 70vh; background-color: rgba(20, 20, 40, 0.95); color: #eee; border: 2px solid #a0a0ff; border-radius: 15px; box-shadow: 0 0 25px rgba(160, 160, 255, 0.5); z-index: 110; padding: 25px; box-sizing: border-box; font-size: 14px; line-height: 1.6; display: none; flex-direction: column; }
+        #helpModal h2 { margin-top: 0; color: #a0a0ff; text-align: center; font-size: 20px; border-bottom: 1px solid #a0a0ff; padding-bottom: 10px; margin-bottom: 15px; }
+        #helpContent { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
+        #helpContent h3 { color: #00ffff; margin-top: 15px; margin-bottom: 5px; font-size: 16px; }
+        #helpContent ul { list-style: none; padding-left: 10px; }
+        #helpContent li { margin-bottom: 8px; }
+        #helpContent strong { color: #ffff00; }
+        #closeHelpButton { margin-top: 20px; padding: 8px 15px; font-size: 14px; align-self: center; background: linear-gradient(145deg, #ff6969, #cd5c5c); box-shadow: 0 4px 8px rgba(255, 100, 100, 0.4); }
+        #closeHelpButton:hover { background: linear-gradient(145deg, #ff4f4f, #b22222); box-shadow: 0 6px 12px rgba(255, 100, 100, 0.6); }
+        #gameControls { position: absolute; bottom: 10px; left: 10px; right: 10px; max-width: 800px; margin: 0 auto; z-index: 10; display: none; justify-content: space-between; align-items: center; pointer-events: none; }
+        #gameControls > * { pointer-events: auto; }
+        #speedSelector { display: flex; align-items: center; gap: 10px; }
+        #speedSelector span { font-size: 14px; margin-right: 10px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); }
+        #speedSelector button { padding: 5px 10px; font-size: 12px; background: linear-gradient(145deg, #aaaaaa, #777777); box-shadow: 0 2px 4px rgba(200, 200, 200, 0.4); }
+        #speedSelector button:hover { background: linear-gradient(145deg, #bbbbbb, #888888); box-shadow: 0 3px 6px rgba(200, 200, 200, 0.6); transform: translateY(-1px); }
+        #speedSelector button:active { transform: translateY(0px); box-shadow: 0 1px 2px rgba(200, 200, 200, 0.3); }
+        #speedSelector button.active-speed { background: linear-gradient(145deg, #00ffff, #00aaaa); box-shadow: 0 4px 8px rgba(0, 255, 255, 0.4); color: #111; transform: translateY(-1px); }
+        #menuButton { padding: 5px 10px; font-size: 12px; background: linear-gradient(145deg, #f0e68c, #daa520); box-shadow: 0 2px 4px rgba(218, 165, 32, 0.4); }
+        #menuButton:hover { background: linear-gradient(145deg, #fffacd, #b8860b); box-shadow: 0 3px 6px rgba(218, 165, 32, 0.6); transform: translateY(-1px); }
+        #menuButton:active { transform: translateY(0px); box-shadow: 0 1px 2px rgba(218, 165, 32, 0.3); }
+    </style>
+    </head>
+    <body>
+        <div id="ui"> <div id="score">Punkte: 0</div> <div id="level">Level:
+                1</div> <div id="lives">Leben: 3</div> </div>
+        <div id="gameControls"> <button id="menuButton">MENU</button> <div
+                id="speedSelector"> <span>Speed:</span> <button
+                    id="speed05x">1/2x</button> <button id="speed1x">1x</button>
+                <button id="speed2x">2x</button> <button
+                    id="speed4x">4x</button> </div> </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="messageBox"> <p id="messageText"></p> <div id="messageButtons">
+                <button id="startButton">Start</button> <button
+                    id="demoButton">Demo</button> <button
+                    id="practiceButton">Üben</button> <button
+                    id="helpButton">?</button> </div> </div>
+        <div id="helpModal"> <h2>Hilfe</h2> <div id="helpContent"> </div>
+            <button id="closeHelpButton">Schließen</button> </div>
+
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/PixelShader.js"></script>
+
+        <script>
+        // --- Konstanten ---
+        const SCALE = 1.5; const BASE_PADDLE_WIDTH = 15; const BASE_PADDLE_HEIGHT = 1; const BASE_PADDLE_DEPTH = 2; const BASE_BALL_RADIUS = 0.45; const BASE_BRICK_WIDTH = 3.33; const BASE_BRICK_HEIGHT = 1.67; const BASE_BRICK_DEPTH = 1.67; const BASE_BRICK_SPACING = 0; const BASE_BRICK_OFFSET_TOP = 28; const BASE_BOUNDS_X = 33.33; const BASE_BOUNDS_Y = 30; const BASE_BALL_SPEED_NORMAL = 0.25; const BASE_POWERUP_SPEED_NORMAL = -0.1; const BASE_POWERUP_SIZE = 2; const PADDLE_WIDTH = BASE_PADDLE_WIDTH * SCALE; const PADDLE_HEIGHT = BASE_PADDLE_HEIGHT * SCALE; const PADDLE_DEPTH = BASE_PADDLE_DEPTH * SCALE; const BALL_RADIUS = BASE_BALL_RADIUS * SCALE; const BRICK_WIDTH = BASE_BRICK_WIDTH * SCALE; const BRICK_HEIGHT = BASE_BRICK_HEIGHT * SCALE; const BRICK_DEPTH = BASE_BRICK_DEPTH * SCALE; const BRICK_SPACING = BASE_BRICK_SPACING * SCALE; const BRICK_OFFSET_TOP = BASE_BRICK_OFFSET_TOP * SCALE; const BRICK_COLS = 10; const BOUNDS_X = BASE_BOUNDS_X * SCALE; const BOUNDS_Y = BASE_BOUNDS_Y * SCALE; const POWERUP_SIZE = BASE_POWERUP_SIZE * SCALE; const BRICK_HEALTH_COLORS = { 1: 0x00ff00 }; const POWERUP_COLORS = { 'EXTRA_BALL': 0xffffff, 'MULTI_BALL': 0x00ffff, 'THROUGH_BALL': 0xff00ff, /*'EXPLOSION_1': 0xff4500, 'EXPLOSION_2': 0xff0000, 'EXPLOSION_3': 0x8b0000,*/ 'PADDLE_BIG': 0x0000ff, 'PADDLE_SMALL': 0x800080, 'BALL_FAST': 0xff1493, 'BALL_SLOW': 0x4682b4 }; const THROUGH_BALL_DURATION = 5000; const MAX_BRICK_ROWS = 3; const BRICK_Z_POSITION = 0; const AI_PADDLE_MAX_SPEED = (BASE_BALL_SPEED_NORMAL * SCALE) * 1.8; const BRICK_DYING_TIME = 500;
+        function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+        // --- Klassen ---
+        class Ball {
+            constructor(initialPosition, initialVelocity, radius = BALL_RADIUS) { this.radius = radius; const geometry = new THREE.SphereGeometry(this.radius, 32, 32); const material = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.6, roughness: 0.4 }); this.mesh = new THREE.Mesh(geometry, material); this.mesh.castShadow = true; this.mesh.receiveShadow = true; this.mesh.position.copy(initialPosition); this.velocity = initialVelocity.clone(); this.isThroughBall = false; this.isAttached = false; this.raycaster = new THREE.Raycaster(); }
+            update = (delta, paddle, game) => { const isActuallyAttached = game.ballAttachedToPaddle && game.balls.length > 0 && this === game.balls[0]; if (isActuallyAttached || game.isGameOver() || game.isPaused()) { if (isActuallyAttached && paddle && paddle.mesh) { this.mesh.position.x = paddle.mesh.position.x; this.mesh.position.y = paddle.mesh.position.y + PADDLE_HEIGHT / 2 + this.radius + 0.1 * SCALE; } return; } const moveVector = this.velocity.clone().multiplyScalar(delta * 60); const moveDistance = moveVector.length(); let collisionHandledThisFrame = false; if (moveDistance > 0 && !this.isThroughBall) { this.raycaster.set(this.mesh.position, moveVector.clone().normalize()); const brickMeshes = game.bricks.map(b => b?.mesh).filter(m => m && !game.bricks.find(br => br.mesh === m)?.dying); if (brickMeshes.length > 0) { const intersects = this.raycaster.intersectObjects(brickMeshes); if (intersects.length > 0 && intersects[0].distance <= moveDistance + this.radius) { const hitObject = intersects[0].object; const hitBrick = game.bricks.find(b => b.mesh === hitObject); if (hitBrick && !hitBrick.dying) { collisionHandledThisFrame = true; const normal = intersects[0].face.normal; this.velocity.reflect(normal); game.handleBrickCollision(this, hitBrick); } } } } this.mesh.position.add(moveVector); if (this.mesh.position.x + this.radius > BOUNDS_X || this.mesh.position.x - this.radius < -BOUNDS_X) { this.velocity.x *= -1; this.mesh.position.x = clamp(this.mesh.position.x, -BOUNDS_X + this.radius, BOUNDS_X - this.radius); } if (this.mesh.position.y + this.radius > BOUNDS_Y) { this.velocity.y *= -1; this.mesh.position.y = BOUNDS_Y - this.radius; } if (this.mesh.position.y - this.radius < -BOUNDS_Y) { if (game.demoMode) { this.mesh.position.y = -BOUNDS_Y + this.radius; this.velocity.y = Math.abs(game.getCurrentBallSpeed()); this.velocity.x += (Math.random() - 0.5) * 0.1 * game.speedMultiplier; this.velocity.normalize().multiplyScalar(game.getCurrentBallSpeed()); } else { game.handleBallLost(this); } } }
+
+            // *** KORRIGIERT: checkCollisionPaddle erhält 'game' als Parameter ***
+            checkCollisionPaddle = (paddle, game) => { // game hinzugefügt
+                // *** KORRIGIERT: game direkt verwenden ***
+                const isActuallyAttached = game.ballAttachedToPaddle && game.balls.length > 0 && this === game.balls[0];
+                if (isActuallyAttached || !paddle || !paddle.mesh || !this.mesh) return false;
+
+                const ballBox = new THREE.Box3().setFromObject(this.mesh);
+                const paddleBox = new THREE.Box3().setFromObject(paddle.mesh);
+                if (ballBox.intersectsBox(paddleBox) && this.velocity.y < 0) {
+                    const currentPaddleWidth = PADDLE_WIDTH * paddle.mesh.scale.x;
+                    const hitSpot = clamp((this.mesh.position.x - paddle.mesh.position.x) / (currentPaddleWidth / 2), -1, 1);
+                    // *** KORRIGIERT: game direkt verwenden ***
+                    const baseSpeed = game.getCurrentBallSpeed();
+                    this.velocity.x = clamp(hitSpot * baseSpeed * 1.2, -baseSpeed * 1.5, baseSpeed * 1.5);
+                    this.velocity.y = Math.abs(baseSpeed);
+                    // *** NEU: Kleiner Epsilon-Pushback ***
+                    this.mesh.position.y = paddle.mesh.position.y + PADDLE_HEIGHT / 2 + this.radius + 0.1;
+                    // *** KORRIGIERT: game direkt verwenden ***
+                    if (game.demoMode) {
+                        paddle.setNewAIRandomTarget();
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            // checkCollisionBricks Methode entfernt
+            activateThroughBall = () => { this.isThroughBall = true; if(this.mesh) this.mesh.material.color.setHex(POWERUP_COLORS['THROUGH_BALL']); }
+            deactivateThroughBall = () => { this.isThroughBall = false; if(this.mesh) this.mesh.material.color.setHex(0xffffff); }
+            destroy = (sceneRef) => { if (this.mesh) { sceneRef.remove(this.mesh); if (this.mesh.geometry) this.mesh.geometry.dispose(); if (this.mesh.material) this.mesh.material.dispose(); this.mesh = null; } } }
+        class Paddle {
+             constructor(game) { this.game = game; const geometry = new THREE.BoxGeometry(PADDLE_WIDTH, PADDLE_HEIGHT, PADDLE_DEPTH); const material = new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.5, roughness: 0.5 }); this.mesh = new THREE.Mesh(geometry, material); this.mesh.position.y = -BOUNDS_Y + PADDLE_HEIGHT * 1.5; this.mesh.castShadow = true; this.mesh.receiveShadow = true; this.aiTargetHitSpot = Math.random() * 2 - 1; }
+             update = (mouseX) => { if (this.game.demoMode || !this.mesh) return; let targetX = mouseX * BOUNDS_X; const currentPaddleWidth = PADDLE_WIDTH * this.mesh.scale.x; const paddleHalfWidth = currentPaddleWidth / 2; targetX = clamp(targetX, -BOUNDS_X + paddleHalfWidth, BOUNDS_X - paddleHalfWidth); this.mesh.position.x = targetX; }
+             updateAI = (delta) => { if (!this.game.demoMode || !this.mesh || this.game.balls.length === 0 || !this.game.balls.some(b => b)) return; let targetBall = null; let lowestY = Infinity; this.game.balls.forEach(b => { if (!b) return; const movingDown = b.velocity.y < 0; const belowCenter = b.mesh.position.y < 0; if (movingDown && belowCenter) { if (b.mesh.position.y < lowestY) { lowestY = b.mesh.position.y; targetBall = b; } } else if (!targetBall && b.mesh.position.y < lowestY) { lowestY = b.mesh.position.y; targetBall = b; } }); if (!targetBall) targetBall = this.game.balls.find(b => b); if (!targetBall) return; let ballX = targetBall.mesh.position.x; const currentPaddleWidth = PADDLE_WIDTH * this.mesh.scale.x; const paddleHalfWidth = currentPaddleWidth / 2; let targetPaddleX = ballX - this.aiTargetHitSpot * paddleHalfWidth; targetPaddleX = clamp(targetPaddleX, -BOUNDS_X + paddleHalfWidth, BOUNDS_X - paddleHalfWidth); const dx = targetPaddleX - this.mesh.position.x; const maxMove = AI_PADDLE_MAX_SPEED * this.game.speedMultiplier * delta * 60; const moveStep = clamp(dx, -maxMove, maxMove); this.mesh.position.x += moveStep; }
+             setNewAIRandomTarget = () => { this.aiTargetHitSpot = Math.random() * 1.8 - 0.9; }
+             resetSize = () => { if (this.mesh) this.mesh.scale.x = 1; }
+             changeSize = (factor) => { if (this.mesh) this.mesh.scale.x = clamp(this.mesh.scale.x * factor, 0.5, 2.5); }
+             getBoundingBox = () => { return this.mesh ? new THREE.Box3().setFromObject(this.mesh) : null; } }
+        class Brick {
+             constructor(x, y, z, health, powerUpType) { this.health = health; this.powerUpType = powerUpType; const geometry = new THREE.BoxGeometry(BRICK_WIDTH, BRICK_HEIGHT, BRICK_DEPTH); const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.3, roughness: 0.7, transparent: true, opacity: 1.0 }); this.mesh = new THREE.Mesh(geometry, material); this.mesh.position.set(x, y, z); this.mesh.scale.set(0.95, 0.95, this.health); /* Skaliere Tiefe (Z) */ this.mesh.castShadow = true; this.mesh.receiveShadow = true; this.dying = false; this.dyingTimer = 0; this.readyToRemove = false; }
+             hit = () => { if (this.dying) return false; this.health--; if (this.mesh) { this.mesh.scale.z = Math.max(1, this.health); /* Passe Tiefe (Z) an */ } if (this.health <= 0) { return true; } else { return false; } }
+             startDying = () => { if (this.mesh && !this.dying) { this.dying = true; this.dyingTimer = BRICK_DYING_TIME; } }
+             update = (delta) => { if (this.dying && !this.readyToRemove && this.mesh) { this.dyingTimer -= delta * 1000; if (this.dyingTimer <= 0) { this.readyToRemove = true; this.mesh.material.opacity = 0; } else { const timeRatio = Math.max(0, this.dyingTimer / BRICK_DYING_TIME); this.mesh.material.opacity = timeRatio; } } }
+             destroy = (sceneRef) => { if (this.mesh) { sceneRef.remove(this.mesh); if (this.mesh.geometry) this.mesh.geometry.dispose(); if (this.mesh.material) this.mesh.material.dispose(); this.mesh = null; } } }
+        class PowerUp {
+              constructor(position, type, initialVelocity) { this.type = type; const geometry = new THREE.BoxGeometry(POWERUP_SIZE, POWERUP_SIZE, POWERUP_SIZE); const material = new THREE.MeshStandardMaterial({ color: POWERUP_COLORS[type] || 0xffffff, metalness: 0.5, roughness: 0.5 }); this.mesh = new THREE.Mesh(geometry, material); this.mesh.position.copy(position); this.velocity = initialVelocity.clone(); }
+              update = (delta) => { if(this.mesh) this.mesh.position.add(this.velocity.clone().multiplyScalar(delta * 60)); }
+              checkCollisionPaddle = (paddle) => { if (!this.mesh || !paddle || !paddle.mesh) return false; const puBox = new THREE.Box3().setFromObject(this.mesh); const paddleBox = paddle.getBoundingBox(); return paddleBox ? puBox.intersectsBox(paddleBox) : false; }
+              destroy = (sceneRef) => { if (this.mesh) { sceneRef.remove(this.mesh); if (this.mesh.geometry) this.mesh.geometry.dispose(); if (this.mesh.material) this.mesh.material.dispose(); this.mesh = null; } } }
+
+        /**
+         * Hauptklasse für das Spielmanagement.
+         */
+        class Game {
+            constructor() { this.canvas = null; this.scene = null; this.camera = null; this.renderer = null; this.paddle = null; this.balls = []; this.bricks = []; this.powerUps = []; this.score = 0; this.lives = 3; this.level = 1; this.ballAttachedToPaddle = true; this.gameOver = false; this.levelComplete = false; this.gamePaused = true; this.demoMode = false; this.practiceMode = false; this.practiceBallCount = 0; this.speedMultiplier = 1; this.throughBallTimer = 0; this.scoreElement = document.getElementById('score'); this.livesElement = document.getElementById('lives'); this.levelElement = document.getElementById('level'); this.messageBox = document.getElementById('messageBox'); this.messageText = document.getElementById('messageText'); this.messageButtons = document.getElementById('messageButtons'); this.startButton = null; this.demoButton = null; this.helpButton = null; this.practiceButton = null; this.speedControlsDiv = null; this.speedButtons = null; this.helpModal = null; this.closeHelpButton = null; this.menuButtonContainer = null; this.menuButton = null; this.clock = new THREE.Clock(); /* Post-Processing entfernt */ }
+            // --- Event Listener Funktionen ---
+            handleStartClick = () => { this.hideHelp(); this.removeInitialListeners(); this.startGame(false, false); }
+            handleDemoClick = () => { this.hideHelp(); this.removeInitialListeners(); this.startGame(true, false); }
+            handlePracticeClick = () => { this.hideHelp(); this.removeInitialListeners(); this.startGame(false, true); }
+            handleNextLevelClick = () => { this.startButton.removeEventListener('click', this.handleNextLevelClick); this.gamePaused = false; this.messageBox.style.display = 'none'; this.createLevel(this.level); if (this.demoMode && this.ballAttachedToPaddle && this.balls.length > 0) { setTimeout(() => { if (!this.isPaused()) this.launchBall(); }, 100); } }
+            handleRestartClick = () => { this.startButton.removeEventListener('click', this.handleRestartClick); this.messageBox.style.display = 'none'; this.showInitialMessage(); }
+            handleSpeedClick = (multiplier) => { if (!this.demoMode) return; this.setGameSpeed(multiplier); this.updateSpeedButtonStyles(); }
+            showHelp = () => { if(this.helpModal) this.helpModal.style.display = 'flex'; }
+            hideHelp = () => { if(this.helpModal) this.helpModal.style.display = 'none'; }
+            handleMenuClick = () => { this.gamePaused = true; this.gameOver = true; this.showInitialMessage(); }
+            removeInitialListeners = () => { this.startButton.removeEventListener('click', this.handleStartClick); this.demoButton.removeEventListener('click', this.handleDemoClick); this.practiceButton.removeEventListener('click', this.handlePracticeClick); this.helpButton.removeEventListener('click', this.showHelp); }
+            handleKeyDown = (event) => { /* Leer */ }
+
+            // --- Initialisierung ---
+            init() { /* ... unverändert ... */ }
+            // --- Spielsteuerung ---
+            startGame = (isDemo, isPractice) => { /* ... unverändert ... */ }
+            createLevel = (levelNum) => { /* ... unverändert ... */ }
+            getLevelConfig = (levelNum) => { /* ... unverändert ... */ }
+            createBounds = () => { /* ... unverändert ... */ }
+            launchBall = () => { /* ... unverändert ... */ }
+            handleBallLost = (lostBall) => { /* ... unverändert ... */ }
+            handleBrickCollision = (ball, brick) => { /* ... unverändert ... */ }
+            createPowerUp = (position, type) => { /* ... unverändert ... */ }
+            activatePowerUp = (type) => { /* ... unverändert ... */ }
+             deactivateThroughBall = () => { /* ... unverändert ... */ }
+             triggerExplosion = (position, strength) => { /* ... unverändert ... */ }
+             resetBallPosition = () => { /* ... unverändert ... */ }
+             setGameSpeed = (multiplier) => { /* ... unverändert ... */ }
+             getCurrentBallSpeed = () => { /* ... unverändert ... */ }
+            updateUI = () => { /* ... unverändert ... */ }
+            showMessage = (text, button1Text = "Okay") => { /* ... unverändert ... */ }
+            showInitialMessage = () => { /* ... unverändert ... */ }
+            updateSpeedButtonStyles = () => { /* ... unverändert ... */ }
+             handleMouseMove = (event) => { /* ... unverändert ... */ }
+             handleMouseDown = (event) => { /* ... unverändert ... */ }
+             handleWindowResize = () => { /* ... unverändert ... */ }
+             showHelp = () => { /* ... unverändert ... */ }
+             hideHelp = () => { /* ... unverändert ... */ }
+
+             // *** KORRIGIERT: updateGameObjects ohne expliziten Brick-Check ***
+             updateGameObjects = (delta) => {
+                 if (this.demoMode) this.paddle.updateAI(delta);
+
+                 let scoreChangedByPaddle = false;
+
+                 this.balls.filter(b => b).forEach(ball => {
+                     // Ball.update behandelt jetzt Bewegung, Wand- UND Brick-Kollision (via Raycast)
+                     ball.update(delta, this.paddle, this);
+
+                     // Prüfe nur noch Paddel-Kollision hier
+                     // *** KORRIGIERT: Übergabe von 'this' (game Instanz) ***
+                     const paddleCollision = ball.checkCollisionPaddle(this.paddle, this);
+                     if (paddleCollision) {
+                         this.score = Math.max(0, this.score - 1); // Abzug immer
+                         scoreChangedByPaddle = true;
+                     }
+                     // Brick-Kollisions-Check entfernt, da in ball.update()
+                 });
+
+                 // Update bricks (dying animation)
+                 this.bricks.forEach(brick => { if (brick) brick.update(delta); });
+
+                 // Update power-ups
+                 for (let i = this.powerUps.length - 1; i >= 0; i--) { const pu = this.powerUps[i]; if (!pu) continue; pu.update(delta); if (pu.checkCollisionPaddle(this.paddle)) { this.activatePowerUp(pu.type); pu.destroy(this.scene); this.powerUps.splice(i, 1); } else if (pu.mesh && pu.mesh.position.y < -BOUNDS_Y - 5 * SCALE) { pu.destroy(this.scene); this.powerUps.splice(i, 1); } }
+                 // Remove dead bricks
+                 for (let i = this.bricks.length - 1; i >= 0; i--) { const brick = this.bricks[i]; if (brick && brick.readyToRemove) { brick.destroy(this.scene); this.bricks.splice(i, 1); } }
+
+                 // Check level complete
+                 if (!this.levelComplete && this.bricks.length === 0 && this.balls.some(b => b)) {
+                     this.levelComplete = true; this.level++; this.showMessage("Level " + (this.level - 1) + " geschafft!" + (this.demoMode ? " (Demo)" : ""), "Nächstes Level");
+                 }
+                 // Update through ball timer
+                 if (this.throughBallTimer > 0) { this.throughBallTimer -= delta * 1000; if (this.throughBallTimer <= 0) this.deactivateThroughBall(); }
+
+                 // Update UI if paddle hit changed score
+                 if (scoreChangedByPaddle) {
+                     this.updateUI();
+                 }
+            }
+
+             animate = () => { /* ... unverändert ... */ }
+             isPaused = () => { return this.gamePaused; }
+             isGameOver = () => { return this.gameOver; }
+
+            // Kopierte Methoden hier einfügen (gekürzt zur Übersicht)
+            init = () => { this.canvas = document.getElementById('gameCanvas'); if (!this.canvas) { console.error("Game.init: Canvas element 'gameCanvas' not found!"); return; } this.startButton = document.getElementById('startButton'); this.demoButton = document.getElementById('demoButton'); this.helpButton = document.getElementById('helpButton'); this.practiceButton = document.getElementById('practiceButton'); this.speedControlsDiv = document.getElementById('speedSelector'); this.speedButtons = {}; this.speedButtons['0.5'] = document.getElementById('speed05x'); this.speedButtons['1'] = document.getElementById('speed1x'); this.speedButtons['2'] = document.getElementById('speed2x'); this.speedButtons['4'] = document.getElementById('speed4x'); this.helpModal = document.getElementById('helpModal'); this.closeHelpButton = document.getElementById('closeHelpButton'); this.menuButtonContainer = document.getElementById('gameControls'); this.menuButton = document.getElementById('menuButton'); this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0x222222); const aspect = this.canvas.clientWidth / this.canvas.clientHeight; this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000 * SCALE); this.camera.position.set(3.318960648948707, -45.90998941082183, 59.93971835933975); this.camera.lookAt(1.452068949235898, -3.7223901748067596, -4.3877538907254925); this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true }); this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight); this.renderer.setPixelRatio(window.devicePixelRatio); this.renderer.shadowMap.enabled = true; const ambientLight = new THREE.AmbientLight(0xcccccc, 0.5); this.scene.add(ambientLight); const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); directionalLight.position.set(10 * SCALE, -20 * SCALE, 30 * SCALE); directionalLight.castShadow = true; directionalLight.shadow.mapSize.width = 1024; directionalLight.shadow.mapSize.height = 1024; directionalLight.shadow.camera.near = 0.5 * SCALE; directionalLight.shadow.camera.far = 100 * SCALE; directionalLight.shadow.camera.left = -BOUNDS_X; directionalLight.shadow.camera.right = BOUNDS_X; directionalLight.shadow.camera.top = BOUNDS_Y; directionalLight.shadow.camera.bottom = -BOUNDS_Y; this.scene.add(directionalLight); this.paddle = new Paddle(this); this.scene.add(this.paddle.mesh); this.createBounds(); document.addEventListener('mousemove', this.handleMouseMove); document.addEventListener('mousedown', this.handleMouseDown); window.addEventListener('resize', this.handleWindowResize); document.addEventListener('keydown', this.handleKeyDown); this.speedButtons['0.5'].addEventListener('click', () => this.handleSpeedClick(0.5)); this.speedButtons['1'].addEventListener('click', () => this.handleSpeedClick(1)); this.speedButtons['2'].addEventListener('click', () => this.handleSpeedClick(2)); this.speedButtons['4'].addEventListener('click', () => this.handleSpeedClick(4)); this.helpButton.addEventListener('click', this.showHelp); this.closeHelpButton.addEventListener('click', this.hideHelp); this.menuButton.addEventListener('click', this.handleMenuClick); this.updateUI(); this.gameOver = false; this.levelComplete = false; this.gamePaused = true; this.demoMode = false; this.practiceMode = false; this.ballAttachedToPaddle = true; this.showInitialMessage(); this.animate(); }
+            startGame = (isDemo, isPractice) => { this.demoMode = isDemo; this.practiceMode = isPractice; this.gamePaused = false; this.gameOver = false; this.levelComplete = false; this.messageBox.style.display = 'none'; this.hideHelp(); this.setGameSpeed(this.demoMode ? 1 : 1); this.menuButtonContainer.style.display = 'flex'; this.speedControlsDiv.style.display = this.demoMode ? 'flex' : 'none'; if(this.demoMode) { this.updateSpeedButtonStyles(); } this.level = 1; this.score = 0; this.lives = 3; this.practiceBallCount = this.practiceMode ? 1 : 0; this.updateUI(); this.createLevel(this.level); if (this.demoMode && this.ballAttachedToPaddle && this.balls.length > 0) { setTimeout(() => { if (!this.isPaused() && !this.isGameOver()) this.launchBall(); }, 100); } else if (!this.demoMode) { this.ballAttachedToPaddle = true; if(this.balls.length > 0 && this.balls[0]) this.balls[0].isAttached = true; this.resetBallPosition(); } }
+            createLevel = (levelNum) => { this.levelComplete = false; this.ballAttachedToPaddle = true; this.setGameSpeed(this.demoMode ? this.speedMultiplier : 1); this.powerUps.forEach(p => p.destroy(this.scene)); this.powerUps.length = 0; this.bricks.forEach(b => b.destroy(this.scene)); this.bricks.length = 0; this.balls.forEach(b => b.destroy(this.scene)); this.balls.length = 0; const config = this.getLevelConfig(levelNum); const totalBlockWidth = config.cols * BRICK_WIDTH; const sideGap = (BOUNDS_X * 2 - totalBlockWidth) / 2; const leftEdgeOfFirstBrick = -BOUNDS_X + sideGap; for (let r = 0; r < config.rows; r++) { for (let c = 0; c < config.cols; c++) { if (config.layout[r] && config.layout[r][c]) { const brickData = config.layout[r][c]; if (brickData.health > 0) { const x = leftEdgeOfFirstBrick + c * (BRICK_WIDTH + BRICK_SPACING) + BRICK_WIDTH / 2; const y = BOUNDS_Y - BRICK_OFFSET_TOP - r * BRICK_HEIGHT - BRICK_HEIGHT / 2; const newBrick = new Brick(x, y, BRICK_Z_POSITION, brickData.health, brickData.powerUp); this.bricks.push(newBrick); this.scene.add(newBrick.mesh); } } } } const initialBallSpeed = this.getCurrentBallSpeed(); const newBall = new Ball( new THREE.Vector3(this.paddle.mesh.position.x, this.paddle.mesh.position.y + PADDLE_HEIGHT / 2 + BALL_RADIUS + 0.1 * SCALE, 0), new THREE.Vector3(0, initialBallSpeed, 0) ); newBall.isAttached = true; newBall.isThroughBall = false; if(newBall.mesh) newBall.mesh.material.color.setHex(0xffffff); this.balls.push(newBall); this.scene.add(newBall.mesh); this.throughBallTimer = 0; this.paddle.resetSize(); this.updateUI(); this.resetBallPosition(); }
+            getLevelConfig = (levelNum) => { const baseRows = (levelNum === 1) ? 1 : 2; const config = { rows: baseRows + 1, cols: BRICK_COLS, layout: [] }; for (let r = 0; r < config.rows; r++) { config.layout[r] = []; } const frontRowHealth = Math.max(1, levelNum); for (let c = 0; c < config.cols; c++) { config.layout[0][c] = { health: frontRowHealth, powerUp: null }; } for (let r = 1; r < config.rows; r++) { for (let c = 0; c < config.cols; c++) { config.layout[r][c] = { health: 1, powerUp: null }; } } return config; }
+            createBounds = () => { if (this.scene.getObjectByName("topWall")) return; const mat = new THREE.MeshBasicMaterial({ color: 0x555555, transparent: true, opacity: 0.3, side: THREE.DoubleSide }); const twg = new THREE.PlaneGeometry(BOUNDS_X * 2, SCALE); const tw = new THREE.Mesh(twg, mat); tw.position.set(0, BOUNDS_Y + SCALE * 0.5, 0); tw.name = "topWall"; this.scene.add(tw); const lwg = new THREE.PlaneGeometry(SCALE, BOUNDS_Y * 2); const lw = new THREE.Mesh(lwg, mat); lw.position.set(-BOUNDS_X - SCALE * 0.5, 0, 0); lw.name = "leftWall"; this.scene.add(lw); const rwg = new THREE.PlaneGeometry(SCALE, BOUNDS_Y * 2); const rw = new THREE.Mesh(rwg, mat); rw.position.set(BOUNDS_X + SCALE * 0.5, 0, 0); rw.name = "rightWall"; this.scene.add(rw); }
+            launchBall = () => { if (this.ballAttachedToPaddle && this.balls.length > 0 && this.balls[0] && !this.gameOver && !this.gamePaused) { this.ballAttachedToPaddle = false; const ballToLaunch = this.balls[0]; ballToLaunch.isAttached = false; const currentBallSpeed = this.getCurrentBallSpeed(); ballToLaunch.velocity.x = (Math.random() - 0.5) * 0.3 * SCALE * this.speedMultiplier; ballToLaunch.velocity.y = currentBallSpeed; } }
+            handleBallLost = (lostBall) => { const index = this.balls.findIndex(b => b === lostBall); if (index > -1) { const ballToRemove = this.balls[index]; ballToRemove.destroy(this.scene); this.balls.splice(index, 1); } else { console.warn("handleBallLost: Verlorener Ball nicht im Array gefunden:", lostBall?.mesh?.uuid); return; } if (this.balls.some(b => b)) return; if (this.practiceMode) { this.practiceBallCount++; this.updateUI(); this.ballAttachedToPaddle = true; const newBall = new Ball( new THREE.Vector3(this.paddle.mesh.position.x, this.paddle.mesh.position.y + PADDLE_HEIGHT / 2 + BALL_RADIUS + 0.1 * SCALE, 0), new THREE.Vector3(0, this.getCurrentBallSpeed(), 0) ); newBall.isAttached = true; newBall.isThroughBall = false; if(newBall.mesh) newBall.mesh.material.color.setHex(0xffffff); this.balls.push(newBall); this.scene.add(newBall.mesh); this.resetBallPosition(); } else if (!this.demoMode) { this.lives--; this.updateUI(); if (this.lives <= 0) { this.gameOver = true; this.showMessage("Game Over!\nPunkte: " + this.score, "Neustart"); } else { this.ballAttachedToPaddle = true; const newBall = new Ball( new THREE.Vector3(this.paddle.mesh.position.x, this.paddle.mesh.position.y + PADDLE_HEIGHT / 2 + BALL_RADIUS + 0.1 * SCALE, 0), new THREE.Vector3(0, this.getCurrentBallSpeed(), 0) ); newBall.isAttached = true; newBall.isThroughBall = false; if(newBall.mesh) newBall.mesh.material.color.setHex(0xffffff); this.balls.push(newBall); this.scene.add(newBall.mesh); this.resetBallPosition(); this.paddle.resetSize(); this.throughBallTimer = 0; } } else { this.gameOver = true; this.showMessage("Demo Ende (Fehler: Letzter Ball verloren trotz AI)!\nPunkte: " + this.score, "Neustart"); } }
+            handleBrickCollision = (ball, brick) => { let destroyed = brick.hit(); this.score += 1; this.updateUI(); if (destroyed && !brick.dying) { brick.startDying(); if (brick.powerUpType) this.createPowerUp(brick.mesh.position.clone(), brick.powerUpType); if (brick.powerUpType && brick.powerUpType.startsWith('EXPLOSION')) { const strength = parseInt(brick.powerUpType.split('_')[1]); this.triggerExplosion(brick.mesh.position.clone(), strength); } } }
+            createPowerUp = (position, type) => { const currentPowerupSpeed = BASE_POWERUP_SPEED_NORMAL * SCALE * this.speedMultiplier; const initialVelocity = new THREE.Vector3(0, currentPowerupSpeed, 0); const newPowerUp = new PowerUp(position, type, initialVelocity); this.powerUps.push(newPowerUp); this.scene.add(newPowerUp.mesh); }
+            activatePowerUp = (type) => { let baseSpeedMultiplier = this.demoMode ? this.speedMultiplier : 1; switch (type) { case 'EXTRA_BALL': if (this.balls.length < 5) { const newVel = new THREE.Vector3((Math.random() - 0.5) * 0.5 * SCALE * this.speedMultiplier, this.getCurrentBallSpeed(), 0); const newBall = new Ball(this.paddle.mesh.position.clone().add(new THREE.Vector3(0, BALL_RADIUS + PADDLE_HEIGHT / 2 + 1 * SCALE, 0)), newVel); const existingBall = this.balls.find(b => b); if (newBall) { newBall.isAttached = false; newBall.isThroughBall = existingBall?.isThroughBall || false; if (newBall.isThroughBall) newBall.mesh.material.color.setHex(POWERUP_COLORS['THROUGH_BALL']); this.balls.push(newBall); this.scene.add(newBall.mesh); } } break; case 'MULTI_BALL': const currentBalls = [...this.balls]; currentBalls.forEach(ball => { if (ball && this.balls.length < 5) { const offset = new THREE.Vector3((Math.random() > 0.5 ? 2 : -2) * SCALE, 0, 0); const newVel = ball.velocity.clone().multiplyScalar(1.05); const newBall = new Ball(ball.mesh.position.clone().add(offset), newVel); if (newBall) { newBall.isAttached = false; newBall.isThroughBall = ball.isThroughBall; if (newBall.isThroughBall) newBall.mesh.material.color.setHex(POWERUP_COLORS['THROUGH_BALL']); this.balls.push(newBall); this.scene.add(newBall.mesh); } } }); break; case 'THROUGH_BALL': this.balls.forEach(ball => { if (ball) ball.activateThroughBall(); }); this.throughBallTimer = THROUGH_BALL_DURATION; break; case 'PADDLE_BIG': this.paddle.changeSize(1.5); break; case 'PADDLE_SMALL': this.paddle.changeSize(0.7); break; case 'BALL_FAST': this.setGameSpeed(this.speedMultiplier * 1.3); this.updateSpeedButtonStyles(); break; case 'BALL_SLOW': this.setGameSpeed(this.speedMultiplier * 0.7); this.updateSpeedButtonStyles(); break; } }
+             deactivateThroughBall = () => { this.balls.forEach(ball => { if (ball) ball.deactivateThroughBall(); }); this.throughBallTimer = 0; }
+             triggerExplosion = (position, strength) => { const explosionRadius = BRICK_WIDTH * 1.5 * strength; let scoreChanged = false; for (let i = this.bricks.length - 1; i >= 0; i--) { const brick = this.bricks[i]; if (!brick || !brick.mesh) continue; const distance = brick.mesh.position.distanceTo(position); if (distance <= explosionRadius) { if (brick.powerUpType && !brick.powerUpType.startsWith('EXPLOSION')) this.createPowerUp(brick.mesh.position.clone(), brick.powerUpType); if (!brick.dying) { brick.startDying(); this.score += 1; scoreChanged = true; } } } if (scoreChanged) this.updateUI(); /* Level complete check in updateGameObjects */ }
+             resetBallPosition = () => { const targetBall = this.balls.find(b => b); if (targetBall && this.paddle) { targetBall.mesh.position.set( this.paddle.mesh.position.x, this.paddle.mesh.position.y + PADDLE_HEIGHT / 2 + BALL_RADIUS + 0.1 * SCALE, 0 ); if (this.ballAttachedToPaddle && targetBall.isAttached) targetBall.velocity.set(0, this.getCurrentBallSpeed(), 0); } }
+             setGameSpeed = (multiplier) => { this.speedMultiplier = clamp(multiplier, 0.5, 4); const newBaseSpeed = (BASE_BALL_SPEED_NORMAL * SCALE) * this.speedMultiplier; const newMaxSpeed = (BASE_BALL_SPEED_NORMAL * 1.5 * SCALE) * this.speedMultiplier; const newMinSpeed = (BASE_BALL_SPEED_NORMAL * 0.6 * SCALE) * this.speedMultiplier; this.balls.forEach(b => { if (b && b.velocity.lengthSq() > 0) { const currentDir = b.velocity.clone().normalize(); b.velocity.copy(currentDir.multiplyScalar(newBaseSpeed)); } }); this.powerUps.forEach(p => { if (p) p.velocity.y = BASE_POWERUP_SPEED_NORMAL * SCALE * this.speedMultiplier; }); }
+             getCurrentBallSpeed = () => { return (BASE_BALL_SPEED_NORMAL * SCALE) * this.speedMultiplier; }
+             updateUI = () => { this.scoreElement.textContent = "Punkte: " + this.score; if (this.demoMode) { this.livesElement.textContent = "DEMO"; } else if (this.practiceMode) { this.livesElement.textContent = "Ball Nr.: " + this.practiceBallCount; } else { this.livesElement.textContent = "Leben: " + this.lives; } this.levelElement.textContent = "Level: " + this.level; }
+             showMessage = (text, button1Text = "Okay") => { this.messageText.innerText = text; this.startButton.textContent = button1Text; this.startButton.removeEventListener('click', this.handleNextLevelClick); this.startButton.removeEventListener('click', this.handleRestartClick); if (this.gameOver) { this.startButton.addEventListener('click', this.handleRestartClick, { once: true }); } else if (this.levelComplete) { this.startButton.addEventListener('click', this.handleNextLevelClick, { once: true }); if (this.demoMode) { setTimeout(() => { if (this.levelComplete && this.demoMode && this.gamePaused) { this.handleNextLevelClick(); } }, 1000); } } this.demoButton.style.display = 'none'; if (this.helpButton) this.helpButton.style.display = 'none'; if (this.practiceButton) this.practiceButton.style.display = 'none'; if (this.gameOver && this.menuButtonContainer) this.menuButtonContainer.style.display = 'none'; if (this.gameOver && this.speedControlsDiv) this.speedControlsDiv.style.display = 'none'; this.messageBox.style.display = 'block'; this.gamePaused = true; }
+             showInitialMessage = () => { this.score = 0; this.lives = 3; this.level = 1; this.gameOver = false; this.levelComplete = false; this.demoMode = false; this.practiceMode = false; this.practiceBallCount = 0; this.setGameSpeed(1); this.updateUI(); this.ballAttachedToPaddle = true; this.startButton.removeEventListener('click', this.handleStartClick); this.startButton.removeEventListener('click', this.handleNextLevelClick); this.startButton.removeEventListener('click', this.handleRestartClick); this.demoButton.removeEventListener('click', this.handleDemoClick); this.practiceButton.removeEventListener('click', this.handlePracticeClick); this.helpButton.removeEventListener('click', this.showHelp); this.startButton.textContent = 'Start'; this.startButton.addEventListener('click', this.handleStartClick, { once: true }); this.demoButton.textContent = 'Demo'; this.demoButton.addEventListener('click', this.handleDemoClick, { once: true }); this.practiceButton.textContent = 'Üben'; this.practiceButton.addEventListener('click', this.handlePracticeClick, { once: true }); this.helpButton.textContent = '?'; this.helpButton.addEventListener('click', this.showHelp); this.messageText.innerText = "Willkommen zu 3D Breakout!"; this.startButton.style.display = 'inline-block'; this.demoButton.style.display = 'inline-block'; this.practiceButton.style.display = 'inline-block'; this.helpButton.style.display = 'inline-block'; if (this.speedControlsDiv) this.speedControlsDiv.style.display = 'none'; if (this.menuButtonContainer) this.menuButtonContainer.style.display = 'none'; this.messageBox.style.display = 'block'; this.gamePaused = true; this.hideHelp(); }
+             updateSpeedButtonStyles = () => { if (!this.speedButtons) return; for (const speed in this.speedButtons) { const button = this.speedButtons[speed]; if (button) { if (Math.abs(parseFloat(speed) - this.speedMultiplier) < 0.01) { button.classList.add('active-speed'); } else { button.classList.remove('active-speed'); } } } }
+             handleMouseMove = (event) => { if (this.paddle) { const canvasBounds = this.canvas.getBoundingClientRect(); const mouseX = event.clientX - canvasBounds.left; const worldX = (mouseX / canvasBounds.width) * 2 - 1; this.paddle.update(worldX); } }
+             handleMouseDown = (event) => { if (event.target !== this.renderer.domElement) return; if (!this.demoMode && !this.gamePaused && this.ballAttachedToPaddle) { this.launchBall(); } }
+             handleWindowResize = () => { if (!this.canvas || !this.renderer || !this.camera) return; const newWidth = window.innerWidth; const newHeight = window.innerHeight; this.camera.aspect = newWidth / newHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(newWidth, newHeight); this.renderer.setPixelRatio(window.devicePixelRatio); /* Composer entfernt */ }
+             showHelp = () => { if(this.helpModal) this.helpModal.style.display = 'flex'; }
+             hideHelp = () => { if(this.helpModal) this.helpModal.style.display = 'none'; }
+             updateGameObjects = (delta) => { if (this.demoMode) this.paddle.updateAI(delta); let scoreChangedByPaddle = false; this.balls.filter(b => b).forEach(ball => { ball.update(delta, this.paddle, this); const paddleCollision = ball.checkCollisionPaddle(this.paddle, this); if (paddleCollision) { this.score = Math.max(0, this.score - 1); scoreChangedByPaddle = true; } /* Brick collision handled in ball.update */ }); this.bricks.forEach(brick => { if (brick) brick.update(delta); }); for (let i = this.powerUps.length - 1; i >= 0; i--) { const pu = this.powerUps[i]; if (!pu) continue; pu.update(delta); if (pu.checkCollisionPaddle(this.paddle)) { this.activatePowerUp(pu.type); pu.destroy(this.scene); this.powerUps.splice(i, 1); } else if (pu.mesh && pu.mesh.position.y < -BOUNDS_Y - 5 * SCALE) { pu.destroy(this.scene); this.powerUps.splice(i, 1); } } for (let i = this.bricks.length - 1; i >= 0; i--) { const brick = this.bricks[i]; if (brick && brick.readyToRemove) { brick.destroy(this.scene); this.bricks.splice(i, 1); } } if (!this.levelComplete && this.bricks.length === 0 && this.balls.some(b => b)) { this.levelComplete = true; this.level++; this.showMessage("Level " + (this.level - 1) + " geschafft!" + (this.demoMode ? " (Demo)" : ""), "Nächstes Level"); } if (this.throughBallTimer > 0) { this.throughBallTimer -= delta * 1000; if (this.throughBallTimer <= 0) this.deactivateThroughBall(); } if (scoreChangedByPaddle) { this.updateUI(); } }
+             animate = () => { requestAnimationFrame(this.animate); const delta = this.clock.getDelta(); if (!this.gamePaused && !this.gameOver) this.updateGameObjects(delta); this.renderer.render(this.scene, this.camera); } // Immer direkt rendern
+             isPaused = () => { return this.gamePaused; }
+             isGameOver = () => { return this.gameOver; }
+        } // Ende der Game Klasse
+
+        // --- Spielstart ---
+        let gameInstance = null;
+        window.onload = () => {
+    const gameCanvas = document.getElementById('gameCanvas');
+    if (!gameCanvas) { console.error("FEHLER: Canvas Element 'gameCanvas' nicht im DOM gefunden!"); return; }
+    gameInstance = new Game();
+    gameInstance.init(); // Sets up the game, shows initial message, pauses
+    gameInstance.handleDemoClick(); // <<< ADD THIS LINE BACK
+    gameInstance.handleWindowResize(); // Ensure correct size after start
+};
+    </script>
+
+    </body>
+</html>
